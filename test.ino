@@ -1,4 +1,3 @@
-#include "Memory.h"
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
