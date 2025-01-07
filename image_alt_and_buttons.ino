@@ -12,6 +12,8 @@ const int rightLedPin = 8;
 int leftButtonState = 0;
 int rightButtonState = 0;
 bool scroll = 0;
+int counter = 0;
+int i = 0;
 
 int imageWidth = 320;  // Width of your image (modify as per your image size)
 int imageHeight = 480; // Height of your image (modify as per your image size)
@@ -39,7 +41,7 @@ void setup() {
   pinMode(leftButtonPin, INPUT);
   pinMode(rightButtonPin, INPUT);
 
-  Initialize SD card
+  // Initialize SD card
   if (!SD.begin(53)) {
     Serial.println("SD card initialization failed!");
     return;
@@ -55,8 +57,30 @@ void loop() {
   leftButtonState = digitalRead(leftButtonPin);
   rightButtonState = digitalRead(rightButtonPin);
 
+  // Implement logic to scroll image
   if (scroll == 1) {
-    // Optional: Implement logic to scroll image or modify image size
+    // Wait 1 second before displaying next image
+    counter +=1;
+    counter %= 10;
+    if (counter == 0) {
+      i ++;
+      i %= 4;
+      // Open image file from SD card.
+      imageFile = SD.open(imageNames[i]);
+      if (imageFile) {
+        Serial.print("Displaying image: ");
+        Serial.println(imageNames[i]);
+
+        // Assuming binary file; you can modify this to support other formats as needed.
+        displayImage(imageNames[i]);
+
+        // Close the image file after display
+        imageFile.close();
+      } else {
+        Serial.print("Error opening file: ");
+        Serial.println(imageNames[i]);
+      }
+    }
   }
 
   if (leftButtonState == HIGH) {
@@ -73,26 +97,7 @@ void loop() {
     digitalWrite(rightLedPin, LOW);
   }
 
-  for (int i = 0; i < numImages; i++) {
-    // Open image file from SD card
-    imageFile = SD.open(imageNames[i]);
-    if (imageFile) {
-      Serial.print("Displaying image: ");
-      Serial.println(imageNames[i]);
-
-      // Assuming BMP images; you can modify this to support other formats as needed.
-      displayImage(imageNames[i]);
-
-      // Close the image file after display
-      imageFile.close();
-    } else {
-      Serial.print("Error opening file: ");
-      Serial.println(imageNames[i]);
-    }
-
-    // Wait 3 seconds before displaying next image
-    delay(1000);
-  }
+  delay(100);
 }
 
 // Function to read and display an image from the SD card
