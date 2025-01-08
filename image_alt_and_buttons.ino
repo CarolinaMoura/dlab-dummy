@@ -64,7 +64,7 @@ void loop() {
     counter %= 10;
     if (counter == 0) {
       i ++;
-      i %= 4;
+      i %= numImages;
       // Open image file from SD card.
       imageFile = SD.open(imageNames[i]);
       if (imageFile) {
