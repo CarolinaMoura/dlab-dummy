@@ -1,7 +1,8 @@
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
-#define BUFFPIXEL 20
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 480
 
 MCUFRIEND_kbv tft;
 
@@ -16,16 +17,14 @@ bool scroll = 0;
 int counter = 0;
 int i = 0;
 
-int imageWidth = 320;  // Width of your image (modify as per your image size)
-int imageHeight = 480; // Height of your image (modify as per your image size)
+int imageWidth = 320; 
+int imageHeight = 480;
 
 // Image filenames on the SD card
 const char* imageNames[] = {
-  "rgb_cat",
-  "rgb_cat2",
-  "rgb_cat",
-  "rgb_cat2"
-  
+  "kris",
+  "cat_red",
+  "cat_bl~6"
 };
 
 File imageFile;  // File object for the image
@@ -137,19 +136,6 @@ void displayImage(const char* filename) {
     return;
   }
 
-  uint8_t buffer[BUFFPIXEL * 2];
-  uint16_t colors[BUFFPIXEL];
-
-  // for(int i = 0; i < (imageWidth * imageHeight)/BUFFPIXEL; i++){
-  //   imgFile.read(buffer, sizeof(buffer));
-
-  //   for (int j = 0; j < BUFFPIXEL * 2; j += 2) {
-  //     colors[j >> 1] = (buffer[j] << 8) | buffer[j + 1];
-  //   }
-  //   tft.pushColors(colors, BUFFPIXEL, true );
-
-  //   imgFile.close();
-  // }
   const int bufferSize = imageWidth;
   uint16_t pixelBuffer[bufferSize];
   uint8_t tempBuffer[bufferSize * 2];
@@ -160,9 +146,8 @@ void displayImage(const char* filename) {
         pixelBuffer[i] = (tempBuffer[2*i] << 8) | tempBuffer[2*i + 1];
       }
       
-      tft.setAddrWindow(0, y,imageWidth, y);
+      tft.setAddrWindow(0, y, imageWidth, y);
 
-      // Push both pixels in one call
       tft.pushColors(pixelBuffer, imageWidth, true);
   }
 
