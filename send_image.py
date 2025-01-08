@@ -4,8 +4,8 @@ from PIL import Image
 
 BAUDRATE = 250000
 ARDUINO_PORT = '/dev/cu.usbmodem1301'
-SAVE_PATH = "cat"
-IMAGE_PATH = "images/cat.jpeg"
+SAVE_PATH = "binary_images/cat_black"
+IMAGE_PATH = "images/cat_black.jpeg"
 WIDTH = 320
 HEIGHT = 480  
 
