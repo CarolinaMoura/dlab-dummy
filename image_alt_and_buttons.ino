@@ -1,6 +1,7 @@
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
+#define BUFFPIXEL 20
 
 MCUFRIEND_kbv tft;
 
@@ -20,10 +21,11 @@ int imageHeight = 480; // Height of your image (modify as per your image size)
 
 // Image filenames on the SD card
 const char* imageNames[] = {
-  "rgb_cat", 
-  "rgb_cat2", 
+  "rgb_cat",
+  "rgb_cat2",
   "rgb_cat",
   "rgb_cat2"
+  
 };
 
 File imageFile;  // File object for the image
@@ -34,7 +36,7 @@ void setup() {
   Serial.begin(250000);
   const int ID = 0x9486;
   tft.begin(ID);
-  tft.fillScreen(~TFT_GREEN);
+  tft.fillScreen(TFT_GREEN);
 
   pinMode(leftLedPin, OUTPUT);
   pinMode(rightLedPin, OUTPUT);
@@ -47,9 +49,37 @@ void setup() {
     return;
   }
   Serial.println("SD card initialized.");
+
+  // displayImage("rgb_cat");
   
   // Display image on TFT
   // displayImage("/rgb_cat");  // Assuming your image is saved as "image.rgb565"
+  // listFiles(SD.open("/"), 0);
+
+}
+
+void listFiles(File dir, int numTabs) {
+  while (true) {
+    File entry = dir.openNextFile();  // Open the next file
+    if (!entry) {
+      // No more files
+      break;
+    }
+    for (int i = 0; i < numTabs; i++) {
+      Serial.print('\t');  // Print tabs for subdirectory levels
+    }
+    Serial.print(entry.name());  // Print file name
+    if (entry.isDirectory()) {
+      Serial.println("/");  // Indicate it's a directory
+      listFiles(entry, numTabs + 1);  // Recursively list files in the directory
+    } else {
+      // Files have a size
+      Serial.print("\t");
+      Serial.print(entry.size());
+      Serial.println(" bytes");
+    }
+    entry.close();
+  }
 }
 
 void loop() {
@@ -100,7 +130,6 @@ void loop() {
   delay(100);
 }
 
-// Function to read and display an image from the SD card
 void displayImage(const char* filename) {
   File imgFile = SD.open(filename);
   if (!imgFile) {
@@ -108,25 +137,33 @@ void displayImage(const char* filename) {
     return;
   }
 
-  // Read image pixel by pixel and display on TFT screen
+  uint8_t buffer[BUFFPIXEL * 2];
+  uint16_t colors[BUFFPIXEL];
+
+  // for(int i = 0; i < (imageWidth * imageHeight)/BUFFPIXEL; i++){
+  //   imgFile.read(buffer, sizeof(buffer));
+
+  //   for (int j = 0; j < BUFFPIXEL * 2; j += 2) {
+  //     colors[j >> 1] = (buffer[j] << 8) | buffer[j + 1];
+  //   }
+  //   tft.pushColors(colors, BUFFPIXEL, true );
+
+  //   imgFile.close();
+  // }
+  const int bufferSize = imageWidth;
+  uint16_t pixelBuffer[bufferSize];
+  uint8_t tempBuffer[bufferSize * 2];
+
   for (int y = 0; y < imageHeight; y++) {
-    for (int x = 0; x < imageWidth; x++) {
-      // Read 2 bytes for each pixel (RGB565 format)
-      uint16_t pixelData = imgFile.read() << 8 | imgFile.read();  // Combine the two bytes
+      imgFile.read(tempBuffer, bufferSize * 2);
+      for (int i = 0; i < bufferSize; i++) {
+        pixelBuffer[i] = (tempBuffer[2*i] << 8) | tempBuffer[2*i + 1];
+      }
+      
+      tft.setAddrWindow(0, y,imageWidth, y);
 
-      // Extract RGB565 components
-      uint8_t r = (pixelData >> 11) & 0x1F;  // Red (5 bits)
-      uint8_t g = (pixelData >> 5) & 0x3F;   // Green (6 bits)
-      uint8_t b = pixelData & 0x1F;          // Blue (5 bits)
-
-      // Scale components to 8 bits (for TFT compatibility)
-      r = (r << 3) | (r >> 2);
-      g = (g << 2) | (g >> 4);
-      b = (b << 3) | (b >> 2);
-
-      // Set the pixel color on the TFT screen
-      tft.drawPixel(x, y, pixelData);
-    }
+      // Push both pixels in one call
+      tft.pushColors(pixelBuffer, imageWidth, true);
   }
 
   // Close the image file
