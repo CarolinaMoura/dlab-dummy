@@ -4,10 +4,10 @@ from PIL import Image
 
 BAUDRATE = 250000
 ARDUINO_PORT = '/dev/cu.usbmodem1301'
-SAVE_PATH = "kris_2x3"
-IMAGE_PATH = "images/hambre.jpeg"
-WIDTH = 160
-HEIGHT = 240  
+SAVE_PATH = "cat"
+IMAGE_PATH = "images/cat.jpeg"
+WIDTH = 320
+HEIGHT = 480  
 
 # arduino = serial.Serial(port=ARDUINO_PORT, baudrate=BAUDRATE, timeout=1)
 # time.sleep(2)  # Allow time for Arduino to reset
