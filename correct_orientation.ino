@@ -1,9 +1,13 @@
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
+#include <Fonts/FreeSans12pt7b.h>  // Include the desired font header
 
 #define WHITE 0xFFFF
-#define BLACK 0
+#define BLACK 0x0
+#define RED 0xF800
+
+#define CHAR_SZ 6
 
 MCUFRIEND_kbv tft;
 
@@ -17,17 +21,17 @@ const int rightLedPin = 8;
 
 int leftButtonState = 0;
 int rightButtonState = 0;
-bool scroll = 0;
+bool isRedSquareOn = false;
 int counter = 0;
-int i = 0;
 
-int imageWidth = 160; 
-int imageHeight = 240;
+int imageWidth = 320; 
+int imageHeight = 320;
 
 // Image filenames on the SD card
 const char* imageNames[] = {
-  "kris_2x3",
-  "HAMBR~12"
+  "hambre",
+  "agua",
+  "dolor"
 
 };
 
@@ -62,6 +66,7 @@ void setup() {
   // Display image on TFT
   // displayImage("/rgb_cat");  // Assuming your image is saved as "image.rgb565"
   // listFiles(SD.open("/"), 0);
+  displayImage(imageNames[counter]);
 
 }
 
@@ -94,47 +99,30 @@ void loop() {
   leftButtonState = digitalRead(leftButtonPin);
   rightButtonState = digitalRead(rightButtonPin);
 
-  // Implement logic to scroll image
-  if (scroll == 1) {
-    // Wait 1 second before displaying next image
-    counter +=1;
-    counter %= 10;
-    if (counter == 0) {
-      i ++;
-      i %= numImages;
-      // Open image file from SD card.
-      imageFile = SD.open(imageNames[i]);
-      if (imageFile) {
-        Serial.print("Displaying image: ");
-        Serial.println(imageNames[i]);
-
-        // Assuming binary file; you can modify this to support other formats as needed.
-        displayImage(imageNames[i]);
-
-        // Close the image file after display
-        imageFile.close();
-      } else {
-        Serial.print("Error opening file: ");
-        Serial.println(imageNames[i]);
-      }
-    }
-  }
-
-  if (leftButtonState == HIGH) {
+  if (leftButtonState == LOW) {
     digitalWrite(leftLedPin, HIGH);
-    scroll = 1;
+    tft.fillScreen(WHITE);
+    counter += 1;
+    counter %= numImages;
+    displayImage(imageNames[counter]);
   } else {
     digitalWrite(leftLedPin, LOW);
   }
 
-  if (rightButtonState == HIGH) {
+  if (rightButtonState == LOW) {
     digitalWrite(rightLedPin, HIGH);
-    scroll = 0;
+    drawSquare(RED);
   } else {
     digitalWrite(rightLedPin, LOW);
   }
+}
 
-  delay(200);
+void drawSquare(uint16_t color) {
+  uint16_t thickness = 5;
+  tft.fillRect(0, 0, SCREEN_WIDTH, thickness, color);
+  tft.fillRect(0, 0 + SCREEN_HEIGHT - thickness, SCREEN_WIDTH, thickness, color);
+  tft.fillRect(0, 0, thickness, SCREEN_HEIGHT, color);
+  tft.fillRect(0 + SCREEN_WIDTH - thickness, 0, thickness, SCREEN_HEIGHT, color);
 }
 
 void displayImage(const char* filename) {
@@ -144,13 +132,11 @@ void displayImage(const char* filename) {
     return;
   }
 
-  tft.fillScreen(WHITE);
-
   const int bufferSize = imageWidth;
   uint16_t pixelBuffer[bufferSize];
   uint8_t tempBuffer[bufferSize * 2];
 
-  for (int y = 10; y < 10+imageHeight; y++){
+  for (int y = 0; y < imageHeight; y++){
       imgFile.read(tempBuffer, bufferSize * 2);
       for (int i = 0; i < bufferSize; i++) {
         pixelBuffer[i] = (tempBuffer[2*i] << 8) | tempBuffer[2*i + 1];
@@ -162,10 +148,15 @@ void displayImage(const char* filename) {
       tft.pushColors(pixelBuffer, imageWidth, true);
   }
 
-  tft.setTextSize(5);
+  tft.setTextSize(2);
   tft.setTextColor(BLACK);
-  int str_hor_px = 6* 5 * strlen(filename);
-  tft.setCursor((SCREEN_WIDTH-str_hor_px)>>1, imageHeight+20);
+  tft.setFont(&FreeSans12pt7b);  // Set the custom font
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.getTextBounds(filename, 0,0, &x1, &y1, &w, &h);
+  Serial.println("Text bounds: " + String(w));
+  // int str_hor_px = CHAR_SZ * 5 * strlen(filename);
+  tft.setCursor((SCREEN_WIDTH-w)>>1, imageHeight+20+(h>>1));
   tft.print(filename);
 
   // Close the image file
