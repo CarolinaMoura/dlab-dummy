@@ -1,28 +1,93 @@
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
+#include <Fonts/FreeSans12pt7b.h> 
+#include "DLabImage.h"
+#define INVERT_COLORS false
+
+#define WHITE 0xFFFF
+#define BLACK 0x0
+#define RED 0xF800
+#define LIGHT_GREEN 0x2727
+
 MCUFRIEND_kbv tft;
 
-const int chipSelect = 53;  // Arduino pin connected to SD card CS (TFT port 34)
-const char* f_name = "check";
+int SCREEN_WIDTH = 320;
+int SCREEN_HEIGHT = 480;
+
+const int leftButtonPin = 2;     // blue
+const int rightButtonPin = 3;    // red
+const int leftLedPin = 9;
+const int rightLedPin = 8;
+
+int leftButtonState = 0;
+int rightButtonState = 0;
+bool isRedSquareOn = false;
+int counter = 0;
+
+int imageWidth = 320; 
+int imageHeight = 320;
+File currentDir;
+String filenames[2] = {"colors", "moods"};
+int filenamePtr = 0;
+
+// Image filenames on the SD card
+const char* imageNames[] = {
+  // "hambre",
+  // "agua",
+  // "dolor",
+  // "dormir"
+  "colors/blue",
+  "colors/pink",
+  "colors/yellow",
+  "colors/green",
+  "colors/red",
+  "colors/orange",
+};
+
+// const char* imageNames[] = {
+//   "moods/hungry",
+//   "moods/gratitud",
+//   "moods/happy",
+//   "moods/funny",
+// };
+
+uint16_t adjustColor(uint16_t color) {
+    return INVERT_COLORS ? ~color : color;
+}
+
+File imageFile;  // File object for the image
+const int numImages = sizeof(imageNames) / sizeof(imageNames[0]); // Number of images
 
 void setup() {
-  Serial.begin(250000);  // Initialize serial communication
+  // put your setup code here, to run once:
+  Serial.begin(250000);
   const int ID = 0x9486;
   tft.begin(ID);
-  tft.fillScreen(TFT_GREEN);
-  Serial.println("Arduino ready to receive image data...");
+  tft.fillScreen(adjustColor(TFT_WHITE));
 
-  if (!SD.begin(chipSelect)) {
+  pinMode(leftLedPin, OUTPUT);
+  pinMode(rightLedPin, OUTPUT);
+  pinMode(leftButtonPin, INPUT);
+  pinMode(rightButtonPin, INPUT);
+
+  if (!SD.begin(53)) {
     Serial.println("SD card initialization failed!");
-  } else {
-    Serial.println("SD card initialized.");
+    return;
   }
+  Serial.println("SD card initialized.");
 
-  // createFile(f_name);
-  // checkFileExistence(f_name);
-  listFiles(SD.open("/"), 0);
-
+  tft.setRotation(2);
+  // int tmp = SCREEN_WIDTH;
+  // SCREEN_WIDTH = SCREEN_HEIGHT;
+  // SCREEN_HEIGHT = tmp;
+  // displayImage("kris_2x3");
+  
+  // listFiles(SD.open("/"), 0);
+  
+  // img.drawImage()
+  currentDir = SD.open(filenames[filenamePtr++]);
+  displayImage(imageNames[counter]);
 }
 
 void listFiles(File dir, int numTabs) {
@@ -49,90 +114,41 @@ void listFiles(File dir, int numTabs) {
   }
 }
 
-void checkFileExistence(const char* filename) {
-  if (SD.exists(filename)) {
-    Serial.println("File exists.");
-  } else {
-    Serial.println("File doesn't exist.");
-  }
-}
-
-void createFile(const char* filename) {
-  Serial.println(filename);
-  File file = SD.open(filename, FILE_WRITE);  // Open the file in write mode
-  if (file) {
-    Serial.println("File created successfully.");
-    file.close();
-  } else {
-    Serial.println("Failed to create file.");
-  }
-}
-
-void readFromSerial(){
-  if(Serial.available()){
-    const char* filename = f_name;
-    if(SD.exists(filename)){
-      SD.remove(filename);
-      Serial.println("Removed the filename");
-    } else Serial.println("Didn't find it");
-
-    File file = SD.open(filename, FILE_WRITE);
-    Serial.println("Created it");
-    
-    unsigned long lastByteTime = millis();
-
-    while (true) {
-      if (Serial.available()) {
-        char c = Serial.read();
-        file.write(c);
-        lastByteTime = millis(); // Update the time of the last received byte
-      }
-
-      // Timeout if no data is received for 2 seconds
-      if (millis() - lastByteTime > 2000) {
-        break;
-      }
-    }
-
-    file.close();
-    Serial.println("File write complete.");
-  }
-}
-
-void displayImageFromSD(const char *filename) {
-  File file = SD.open(filename, FILE_READ);
-  if (!file) {
-    Serial.println("Failed to open file!");
-    return;
-  }
-
-  // Dimensions of the image
-  int16_t imgWidth = 2;
-  int16_t imgHeight = 2;
-
-  // Ensure the image fits on the screen
-  int16_t screenWidth = tft.width();
-  int16_t screenHeight = tft.height();
-
-
-  uint16_t buffer[imgWidth];  // Buffer for one row of pixels
-
-  Serial.println(file.size());
-
-  for (int y = 0; y < imgHeight; y++) {
-    // Read one row of pixel data (2 bytes per pixel)
-    file.read((uint8_t *)buffer, imgWidth * 2);
-
-    // Push the row to the display
-    tft.setAddrWindow(0, y, imgWidth - 1, y);  // Set the row window
-    tft.pushColors(buffer, imgWidth, true);    // Push the row of pixels
-  }
-
-  file.close();
-  Serial.println("Image displayed successfully.");
-}
-
 void loop() {
-  readFromSerial();
-//   displayImageFromSD(f_name);
+  // Read button states
+  leftButtonState = digitalRead(leftButtonPin);
+  rightButtonState = digitalRead(rightButtonPin);
+
+  if (leftButtonState == LOW && leftButtonLastState == HIGH) {
+    digitalWrite(leftLedPin, HIGH);
+    tft.fillScreen(adjustColor(WHITE));
+    counter += 1;
+    counter %= numImages;
+    displayImage(imageNames[counter]);
+  } else {
+    digitalWrite(leftLedPin, LOW);
+  }
+
+  if (rightButtonState == LOW) {
+    digitalWrite(rightLedPin, HIGH);
+    uint16_t color = LIGHT_GREEN;
+    // if(isRedSquareOn) color = WHITE;
+    // isRedSquareOn=!isRedSquareOn;
+    drawSquare(color);
+  } else {
+    digitalWrite(rightLedPin, LOW);
+  }
+}
+
+void drawSquare(uint16_t color) {
+  uint16_t thickness = 10;
+  tft.fillRect(0, 0, SCREEN_WIDTH, thickness, color);
+  tft.fillRect(0, 0 + SCREEN_HEIGHT - thickness, SCREEN_WIDTH, thickness, color);
+  tft.fillRect(0, 0, thickness, SCREEN_HEIGHT, color);
+  tft.fillRect(0 + SCREEN_WIDTH - thickness, 0, thickness, SCREEN_HEIGHT, color);
+}
+
+void displayImage(const char* filename) {
+  DLabImage img(filename, SD);
+  img.drawImage(tft, SD, false);
 }
