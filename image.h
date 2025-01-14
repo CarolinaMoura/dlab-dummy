@@ -17,7 +17,7 @@ class Image {
         void render_text(); 
     
     private: 
-        const char* image_file; 
+        char* image_file; 
         char* image_text; 
         const int image_id;
         uint16_t row_buffer [ IMG_DIMENSIONS ] ;

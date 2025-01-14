@@ -41,6 +41,23 @@ Image::Image( const char* filename , const char* image_file , const int image_id
 void Image::display() 
 {   
     File image_file = SD.open(image_file) ;
+
+    if ( !image_file ) {
+        Serial.println("Error opening image file!");
+        return;
+    }
+
+    uint8_t tmp_buffer [ IMG_DIMENSIONS * 2 ] ;
+    for ( int y = 0; y < IMG_DIMENSIONS ; ++y ) {
+      image_file.read( tmp_buffer , IMG_DIMENSIONS * 2 ) ;
+      for ( int i = 0; i < IMG_DIMENSIONS; i++) {
+        row_buffer[i] = ((tmp_buffer[2*i] << 8) | tmp_buffer[2*i + 1]);
+      }
+      
+      tft.setAddrWindow(0, y, imageWidth, y);
+
+      tft.pushColors(row_buffer, imageWidth, true);
+    }
     return ;
 }
 
@@ -56,8 +73,6 @@ void Image::render_text()
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setTextSize(TEXT_SIZE); 
     tft.setCursor(0, TFT_HEIGHT);
-
-    const char* text = image_text;
     
     return ;
 }
