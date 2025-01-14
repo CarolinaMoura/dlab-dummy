@@ -1,8 +1,7 @@
 #include <SD.h>
 #include "Adafruit_GFX.h"
 #include <MCUFRIEND_kbv.h>
-#include <Fonts/FreeSans12pt7b.h>  // Include the desired font header
-// #include <TMRpcm.h>    // option 1
+#include <TMRpcm.h>    // option 1
 
 #define WHITE 0xFFFF
 #define BLACK 0x0
@@ -11,13 +10,13 @@
 #define audioBufferSize 512 // Buffer size for reading audio data
 
 MCUFRIEND_kbv tft;
-// TMRpcm audio;  // option 1
+TMRpcm audio;  
 
-const int audioPin = 12;        // audio pin
+const int audioPin = 11;        // audio pin
 
 File wavFile;
 byte audioBuffer[audioBufferSize];
-const int sampleRate = 16000; // Adjust to match your WAV file's sample rate
+const int sampleRate = 16000 ; 
 
 void setup() {
   // put your setup code here, to run once:
@@ -35,42 +34,37 @@ void setup() {
   Serial.println("SD card initialized.");
 
   tft.setRotation(2);
-
-  pinMode(audioPin, OUTPUT);   // Configure PWM pin  // option 2
   
-  // audio.speakerPin = audioPin;  // option 1
-  // audio.setVolume(1);   // option 1
-  // if (!audio.CSPin) {    // option 1
-  //   audio.CSPin = 53;    // option 1
-  // }
+  audio.speakerPin = audioPin;  
+  audio.setVolume(1);  
+  if (!audio.CSPin) {    
+    audio.CSPin = 53;    
+  }
 
 }
 
 void loop() {
-  tft.fillScreen(~RED);
   playAudio("kris_wav.wav");
-  tft.fillScreen(~TFT_WHITE);
   delay(4000);
 }
 
-// option 1
-// void playAudio(const char *filename) {
-//   if (SD.exists(filename)) {
-//     audio.play(filename); // Play the audio file
+void playAudio(const char *filename) {
+  if (SD.exists(filename)) {
+    audio.play(filename); // Play the audio file
 
-//     // Wait until playback is finished
-//     while (audio.isPlaying()) {
-//       delay(100); // Small delay to prevent freezing
-//     }
+    // Wait until playback is finished
+    while (audio.isPlaying()) {
+      delay(100); // Small delay to prevent freezing
+    }
 
-//     audio.stopPlayback(); // Ensure playback is stopped and file is closed
-//   } else {
-//     Serial.print("File not found...");
-//   }
-// }
+    audio.stopPlayback(); // Ensure playback is stopped and file is closed
+  } else {
+    Serial.print("File not found...");
+  }
+}
 
-//option 2
-// Function to play audio
+// Function to play audio via analog pins
+/*
 void playAudio(const char *filename) {
   File audioFile = SD.open(filename);
   if (!audioFile) {
@@ -95,3 +89,4 @@ void playAudio(const char *filename) {
   audioFile.close();
   Serial.println("Playback finished.");
 }
+*/

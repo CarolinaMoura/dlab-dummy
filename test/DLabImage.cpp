@@ -11,6 +11,7 @@ File DLabImage::openFile(SDClass& sd) {
   }
   return file;
 }
+
 DLabImage::DLabImage(String path, SDClass &sd)
     : path(path), width(0), height(0), caption("") {
     File file = this->openFile(sd);
